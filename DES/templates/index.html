@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DES File Encrypt/Decrypt</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(120deg, #f0f2f5, #e1e9f2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 20px 30px rgba(0, 0, 0, 0.1);
+            width: 500px;
+            text-align: center;
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .container:hover {
+            transform: scale(1.03);
+        }
+
+        h2 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 28px;
+            letter-spacing: 1px;
+        }
+
+        label {
+            font-size: 18px;
+            font-weight: bold;
+            color: #555;
+            display: block;
+            margin: 10px 0 5px;
+        }
+
+        input[type="file"], input[type="text"], select {
+            width: 100%;
+            padding: 14px;
+            margin: 12px 0;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background-color: #fafafa;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="file"]:hover, input[type="text"]:hover, select:hover {
+            border-color: #007bff;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: #007bff;
+            border: none;
+            color: white;
+            border-radius: 8px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        p#strength {
+            font-size: 16px;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        .info-icon {
+            font-size: 24px;
+            color: #007bff;
+        }
+
+        .footer {
+            margin-top: 30px;
+            font-size: 14px;
+            color: #555;
+        }
+
+        .footer a {
+            color: #007bff;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 600px) {
+            .container {
+                width: 90%;
+                padding: 20px;
+            }
+
+            h2 {
+                font-size: 22px;
+            }
+
+            button {
+                font-size: 16px;
+            }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2><span class="info-icon">🔒</span> Mã hóa / Giải mã DES</h2>
+        <form action="/process" method="post" enctype="multipart/form-data">
+            <label for="fileInput">Chọn file:</label>
+            <input type="file" name="file" id="fileInput" required>
+
+            <label for="keyInput">Nhập khóa:</label>
+            <input type="text" name="key" id="keyInput" oninput="checkStrength()" required>
+            <p id="strength"></p>
+
+            <label for="mode">Chế độ:</label>
+            <select name="mode" id="mode">
+                <option value="encrypt">Mã hóa</option>
+                <option value="decrypt">Giải mã</option>
+            </select>
+
+            <button type="submit">Thực hiện</button>
+        </form>
+    </div>
+
+    <script>
+        function checkStrength() {
+            const key = document.getElementById("keyInput").value;
+            const strengthText = document.getElementById("strength");
+
+            if (key.length < 4) {
+                strengthText.innerText = "🔴 Yếu";
+                strengthText.style.color = "red";
+            } else if (key.length < 8) {
+                strengthText.innerText = "🟡 Trung bình";
+                strengthText.style.color = "orange";
+            } else {
+                strengthText.innerText = "🟢 Khỏe";
+                strengthText.style.color = "green";
+            }
+        }
+    </script>
+</body>
+</html>
