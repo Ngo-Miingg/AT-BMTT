@@ -1,0 +1,12 @@
+{
+    "2": [
+        {
+            "owner_id": "1",
+            "filename": "encrypted_AES_tailieu1.txt.enc"
+        },
+        {
+            "owner_id": "1",
+            "filename": "encrypted_AES_tailieu.txt.enc"
+        }
+    ]
+}
