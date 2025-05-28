@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard của bạn - Mã hóa/Giải mã File</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(120deg, #f0f2f5, #e1e9f2);
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            background: white;
+            padding: 20px 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.08);
+        }
+        .header h2 {
+            margin: 0;
+            color: #333;
+            font-size: 28px;
+        }
+        .header .user-info {
+            font-size: 18px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .header .logout-button {
+            padding: 10px 20px;
+            background: #dc3545; /* Red for logout */
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .header .logout-button:hover {
+            background: #c82333;
+        }
+
+        .main-content {
+            display: flex;
+            gap: 25px;
+        }
+        .section {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 15px 25px rgba(0,0,0,0.08);
+            flex: 1;
+        }
+        .section h3 {
+            color: #007bff;
+            margin-bottom: 25px;
+            font-size: 24px;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 10px;
+        }
+        label {
+            font-size: 16px;
+            font-weight: bold;
+            color: #555;
+            display: block;
+            margin: 15px 0 5px;
+        }
+        input[type="file"], input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0 15px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background-color: #fafafa;
+            font-size: 16px;
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            background: #007bff;
+            border: none;
+            color: white;
+            border-radius: 8px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .flash-message {
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            text-align: left;
+            color: white;
+        }
+        .flash-message.success { background-color: #28a745; }
+        .flash-message.error { background-color: #dc3545; }
+        .flash-message.info { background-color: #17a2b8; }
+        .flash-message.warning { background-color: #ffc107; color: #333; }
+
+        /* File List */
+        .file-list {
+            list-style-type: none;
+            padding: 0;
+            max-height: 300px; /* Giới hạn chiều cao */
+            overflow-y: auto; /* Cuộn nếu quá dài */
+            border: 1px solid #eee;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .file-list li {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 16px;
+            color: #444;
+        }
+        .file-list li:last-child {
+            border-bottom: none;
+        }
+        .file-list li:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        .file-actions button {
+            width: auto;
+            padding: 8px 15px;
+            font-size: 14px;
+            margin-left: 10px;
+            margin-top: 0;
+        }
+        .file-actions .decrypt-button {
+            background-color: #28a745; /* Green */
+        }
+        .file-actions .decrypt-button:hover {
+            background-color: #218838;
+        }
+        .file-actions .delete-button {
+            background-color: #dc3545; /* Red */
+        }
+        .file-actions .delete-button:hover {
+            background-color: #c82333;
+        }
+
+        #decryptResult {
+            margin-top: 20px;
+            text-align: center;
+        }
+        #decryptResult a {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #17a2b8; /* Info blue */
+            color: white;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+        }
+        #decryptResult a:hover {
+            background-color: #138496;
+        }
+        .message-container {
+            margin-bottom: 20px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            .header .logout-button {
+                width: 100%;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>Dashboard</h2>
+        <div class="user-info">
+            Xin chào, {{ current_user.username }}!
+            <a href="/logout" class="logout-button">Đăng xuất</a>
+        </div>
+    </div>
+
+    <div class="message-container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <ul style="list-style-type: none; padding: 0;">
+                    {% for category, message in messages %}
+                        <li class="flash-message {{ category }}">{{ message }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <div class="main-content">
+        <div class="section encrypt-section">
+            <h3>Mã hóa File</h3>
+            <form id="encryptForm" enctype="multipart/form-data">
+                <label for="encryptFileInput">Chọn file để mã hóa:</label>
+                <input type="file" id="encryptFileInput" name="file" required>
+
+                <label for="encryptPasswordInput">Mật khẩu mã hóa:</label>
+                <input type="password" id="encryptPasswordInput" name="password" required>
+                <p id="encryptStrength" style="font-size: 14px;"></p>
+
+                <button type="submit">Mã hóa và Tải lên</button>
+            </form>
+            <div id="encryptStatus" class="flash-message" style="display: none;"></div>
+        </div>
+
+        <div class="section decrypt-section">
+            <h3>Giải mã & Quản lý File của bạn</h3>
+            <div id="fileListContainer">
+                {% if file_list %}
+                    <ul class="file-list">
+                        {% for file in file_list %}
+                            <li>
+                                <span>{{ file }}</span>
+                                <div class="file-actions">
+                                    <button class="decrypt-button" onclick="showDecryptPrompt('{{ file }}')">Giải mã</button>
+                                    <button class="delete-button" onclick="deleteFile('{{ file }}')">Xóa</button>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p>Chưa có file nào được mã hóa.</p>
+                {% endif %}
+            </div>
+            
+            <div id="decryptPrompt" style="display: none; margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px;">
+                <h4>Giải mã file: <span id="currentDecryptFileName" style="color: #007bff;"></span></h4>
+                <label for="decryptPasswordInput">Mật khẩu giải mã:</label>
+                <input type="password" id="decryptPasswordInput" name="password" required>
+                <button onclick="submitDecrypt()">Xác nhận Giải mã</button>
+                <button onclick="hideDecryptPrompt()" style="background-color: #6c757d;">Hủy</button>
+            </div>
+            <div id="decryptStatus" class="flash-message" style="display: none;"></div>
+            <div id="decryptResult" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        // Hàm cập nhật độ mạnh mật khẩu (dùng chung)
+        function checkStrength(passwordInputId, strengthTextId) {
+            const key = document.getElementById(passwordInputId).value;
+            const strengthText = document.getElementById(strengthTextId);
+
+            if (key.length === 0) {
+                strengthText.innerText = "";
+            } else if (key.length < 8) {
+                strengthText.innerText = "🔴 Yếu (ít nhất 8 ký tự)";
+                strengthText.style.color = "red";
+            } else if (key.length < 12) {
+                strengthText.innerText = "🟡 Trung bình (nên trên 12 ký tự)";
+                strengthText.style.color = "orange";
+            } else {
+                strengthText.innerText = "🟢 Khỏe (khuyên dùng trên 12 ký tự)";
+                strengthText.style.color = "green";
+            }
+        }
+        document.getElementById('encryptPasswordInput').addEventListener('input', () => checkStrength('encryptPasswordInput', 'encryptStrength'));
+        
+        // Cập nhật danh sách file
+        async function updateFileList() {
+            try {
+                const response = await fetch('/dashboard'); // Fetch lại dashboard để có danh sách file mới
+                const text = await response.text();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(text, 'text/html');
+                const newFileListHtml = doc.getElementById('fileListContainer').innerHTML;
+                document.getElementById('fileListContainer').innerHTML = newFileListHtml;
+            } catch (error) {
+                console.error('Error updating file list:', error);
+                // Có thể hiển thị thông báo lỗi nhỏ trên UI
+            }
+        }
+
+        // Xử lý mã hóa file
+        document.getElementById('encryptForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+            const encryptStatusDiv = document.getElementById('encryptStatus');
+            encryptStatusDiv.style.display = 'none';
+
+            try {
+                const response = await fetch('/encrypt_file', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    encryptStatusDiv.className = 'flash-message success';
+                    form.reset(); // Xóa form sau khi thành công
+                    checkStrength('encryptPasswordInput', 'encryptStrength'); // Reset strength text
+                    await updateFileList(); // Cập nhật danh sách file
+                } else {
+                    encryptStatusDiv.className = 'flash-message error';
+                }
+                encryptStatusDiv.innerText = result.message;
+                encryptStatusDiv.style.display = 'block';
+
+            } catch (error) {
+                console.error('Error encrypting file:', error);
+                encryptStatusDiv.className = 'flash-message error';
+                encryptStatusDiv.innerText = 'Đã xảy ra lỗi khi mã hóa file.';
+                encryptStatusDiv.style.display = 'block';
+            }
+        });
+
+        // Xử lý giải mã file
+        let fileToDecrypt = ''; // Biến lưu tên file đang được giải mã
+
+        function showDecryptPrompt(filename) {
+            fileToDecrypt = filename;
+            document.getElementById('currentDecryptFileName').innerText = filename;
+            document.getElementById('decryptPrompt').style.display = 'block';
+            document.getElementById('decryptStatus').style.display = 'none';
+            document.getElementById('decryptResult').style.display = 'none';
+            document.getElementById('decryptPasswordInput').value = ''; // Xóa mật khẩu cũ
+        }
+
+        function hideDecryptPrompt() {
+            document.getElementById('decryptPrompt').style.display = 'none';
+            document.getElementById('decryptStatus').style.display = 'none';
+            document.getElementById('decryptResult').style.display = 'none';
+            fileToDecrypt = '';
+        }
+
+        async function submitDecrypt() {
+            const password = document.getElementById('decryptPasswordInput').value;
+            const decryptStatusDiv = document.getElementById('decryptStatus');
+            const decryptResultDiv = document.getElementById('decryptResult');
+            decryptStatusDiv.style.display = 'none';
+            decryptResultDiv.style.display = 'none';
+
+            if (!password) {
+                decryptStatusDiv.className = 'flash-message warning';
+                decryptStatusDiv.innerText = 'Vui lòng nhập mật khẩu giải mã!';
+                decryptStatusDiv.style.display = 'block';
+                return;
+            }
+
+            try {
+                const response = await fetch('/decrypt_file', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `filename=${encodeURIComponent(fileToDecrypt)}&password=${encodeURIComponent(password)}`
+                });
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    decryptStatusDiv.className = 'flash-message success';
+                    decryptResultDiv.innerHTML = `<a href="${result.download_link}" target="_blank">Tải file đã giải mã xuống</a>`;
+                    decryptResultDiv.style.display = 'block';
+                } else {
+                    decryptStatusDiv.className = 'flash-message error';
+                    decryptResultDiv.style.display = 'none';
+                }
+                decryptStatusDiv.innerText = result.message;
+                decryptStatusDiv.style.display = 'block';
+            } catch (error) {
+                console.error('Error decrypting file:', error);
+                decryptStatusDiv.className = 'flash-message error';
+                decryptStatusDiv.innerText = 'Đã xảy ra lỗi khi giải mã file.';
+                decryptStatusDiv.style.display = 'block';
+                decryptResultDiv.style.display = 'none';
+            } finally {
+                // Không ẩn prompt ngay để người dùng có thể thử lại nếu lỗi
+                // hideDecryptPrompt(); // Chỉ ẩn khi muốn reset hoàn toàn
+            }
+        }
+
+        // Xóa file
+        async function deleteFile(filename) {
+            if (!confirm(`Bạn có chắc chắn muốn xóa file "${filename}"?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/delete_file', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `filename=${encodeURIComponent(filename)}`
+                });
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    alert(result.message); // Dùng alert đơn giản
+                    await updateFileList(); // Cập nhật danh sách file
+                } else {
+                    alert('Lỗi: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Error deleting file:', error);
+                alert('Đã xảy ra lỗi khi xóa file.');
+            }
+        }
+
+        // Initial load
+        document.addEventListener('DOMContentLoaded', () => {
+            // Khi trang tải, kiểm tra strength cho encrypt input
+            checkStrength('encryptPasswordInput', 'encryptStrength');
+        });
+    </script>
+</body>
+</html>
