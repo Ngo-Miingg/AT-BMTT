@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bảng điều khiển Server File</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(120deg, #f0f2f5, #e1e9f2);
+            min-height: 100vh; margin: 0; padding: 20px; color: #333;
+        }
+        .container {
+            background: white; padding: 40px; border-radius: 16px;
+            box-shadow: 0 20px 30px rgba(0, 0, 0, 0.1);
+            max-width: 900px; margin: 30px auto;
+        }
+        h2 {
+            text-align: center; color: #333; margin-bottom: 30px;
+            font-size: 32px; letter-spacing: 1px;
+        }
+        .status-section, .storage-section, .share-history-section {
+            background: #f8f9fa; border-radius: 12px; padding: 25px;
+            margin-bottom: 30px; box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.05);
+        }
+        .status-section p, .storage-section p { font-size: 18px; margin-bottom: 10px; }
+        .status-section strong, .storage-section strong { color: #007bff; }
+        .user-data-section h3, .share-history-section h3 {
+            font-size: 24px; margin-bottom: 20px; color: #333;
+            border-bottom: 2px solid #eee; padding-bottom: 10px;
+        }
+        .user-card {
+            background: #ffffff; border: 1px solid #e0e0e0;
+            border-radius: 10px; padding: 20px; margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+        .user-card h4 { margin-top: 0; color: #555; font-size: 20px; }
+        .user-card ul { list-style-type: none; padding: 0; margin-top: 10px; }
+        .user-card li {
+            background: #f2f2f2; margin-bottom: 5px; padding: 8px 12px;
+            border-radius: 5px; display: flex; justify-content: space-between;
+            align-items: center; font-size: 15px;
+        }
+        .user-card .file-details { flex-grow: 1; }
+        .user-card .file-name { font-weight: bold; color: #444; }
+        .file-actions-admin { display: flex; gap: 10px; align-items: center; }
+        .user-card .file-size { font-size: 14px; color: #777; margin-right: 5px; }
+        .user-card .file-integrity { font-size: 0.8em; padding: 2px 6px; border-radius: 4px; color: white; margin-right:10px; }
+        .status-verified { background-color: #28a745; }
+        .status-failed_integrity_check { background-color: #dc3545; }
+        .status-unknown { background-color: #6c757d; }
+
+        .download-original-btn, .delete-btn { /* Renamed download button class */
+            background-color: #007bff; color: white; border: none;
+            padding: 8px 15px; border-radius: 5px; cursor: pointer;
+            transition: background-color 0.3s ease; font-size: 14px;
+            text-decoration: none; display: inline-block;
+        }
+        .download-original-btn:hover { background-color: #0056b3; }
+        .delete-btn { background-color: #dc3545; }
+        .delete-btn:hover { background-color: #c82333; }
+        .flash-message {
+            padding: 10px; margin-bottom: 15px; border-radius: 8px;
+            font-weight: bold; text-align: left; color: white;
+        }
+        .flash-message.success { background-color: #28a745; }
+        .flash-message.error { background-color: #dc3545; }
+
+        .share-history-list { list-style-type: none; padding: 0; }
+        .share-history-list li {
+            background: #e9f7ef; margin-bottom: 8px; padding: 10px 15px;
+            border-radius: 8px; font-size: 16px; color: #333;
+            border: 1px solid #d4edda;
+        }
+        .share-history-list li strong { color: #28a745; }
+        .share-history-list li span.filename { font-weight: bold; color: #007bff; }
+    </style>
+    <script>
+        function formatBytes(bytes, decimals = 2) {
+            if (!+bytes) return '0 Bytes' // Handles null, undefined, 0, etc.
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.file-size-raw').forEach(span => {
+                const sizeInBytes = parseInt(span.textContent);
+                if (!isNaN(sizeInBytes)) {
+                    span.textContent = formatBytes(sizeInBytes);
+                } else {
+                    span.textContent = 'N/A'; // Fallback for invalid size
+                }
+            });
+            // Format total storage size
+            const totalStorageSizeEl = document.getElementById('totalStorageSize');
+            if (totalStorageSizeEl) {
+                const totalBytes = parseInt(totalStorageSizeEl.textContent);
+                 if (!isNaN(totalBytes)) {
+                    totalStorageSizeEl.textContent = formatBytes(totalBytes);
+                }
+            }
+        });
+
+        function confirmDeleteUser(userId) {
+            if (confirm(`Bạn có chắc chắn muốn xóa TẤT CẢ dữ liệu của người dùng ID: ${userId} không? Hành động này không thể hoàn tác.`)) {
+                document.getElementById(`deleteForm_${userId}`).submit();
+            }
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h2>Bảng điều khiển Server File</h2>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <ul style="list-style-type: none; padding: 0;">
+                    {% for category, message in messages %}
+                        <li class="flash-message {{ category }}">{{ message }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+
+        <div class="status-section">
+            <h3>Trạng thái Server</h3>
+            <p>Trạng thái Server: <strong>{{ server_status }}</strong></p>
+            <p>Client đang kết nối (ước tính): <strong>{{ connected_clients }}</strong></p>
+        </div>
+
+        <div class="storage-section">
+            <h3>Tổng quan lưu trữ</h3>
+            <p>Tổng số file: <strong>{{ total_files }}</strong></p>
+            <p>Tổng kích thước lưu trữ: <strong id="totalStorageSize">{{ total_size_bytes }}</strong></p> </div>
+
+        <div class="user-data-section">
+            <h3>Dữ liệu người dùng</h3>
+            {% if user_folders %}
+                {% for user_folder in user_folders %}
+                    <div class="user-card">
+                        <h4>Người dùng ID: {{ user_folder.user_id }}</h4>
+                        <p>Số lượng file: <strong>{{ user_folder.file_count }}</strong></p>
+                        <p>Tổng kích thước: <strong class="file-size-raw">{{ user_folder.total_size_bytes }}</strong></p> <form id="deleteForm_{{ user_folder.user_id }}" action="{{ url_for('delete_user_data') }}" method="POST" style="margin-top: 15px;">
+                            <input type="hidden" name="user_id" value="{{ user_folder.user_id }}">
+                            <button type="button" class="delete-btn" onclick="confirmDeleteUser('{{ user_folder.user_id }}')">Xóa toàn bộ dữ liệu người dùng này</button>
+                        </form>
+                        {% if user_folder.files %}
+                            <h5>Các file:</h5>
+                            <ul>
+                                {% for file in user_folder.files %}
+                                    <li>
+                                        <span class="file-details">
+                                            <span class="file-name">{{ file.name }}</span> - 
+                                            <span class="file-size file-size-raw">{{ file.size }}</span>
+                                        </span>
+                                        <div class="file-actions-admin">
+                                            <span class="file-integrity status-{{ file.integrity_status | lower | replace('_', '-') }}">
+                                                {% if file.integrity_status == 'verified' %}Đã xác thực
+                                                {% elif file.integrity_status == 'failed_integrity_check' %}Lỗi
+                                                {% else %}Không rõ
+                                                {% endif %}
+                                            </span>
+                                            <a href="{{ url_for('download_original_file', user_id=user_folder.user_id, filename=file.name) }}" class="download-original-btn">Tải xuống</a>
+                                        </div>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p>Không có file nào cho người dùng này.</p>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p>Chưa có dữ liệu người dùng nào được lưu trữ.</p>
+            {% endif %}
+        </div>
+
+        <div class="share-history-section">
+            <h3>Lịch sử chia sẻ File</h3>
+            {% if share_history %}
+                <ul class="share-history-list">
+                    {% for entry in share_history %}
+                        <li>
+                            <strong>{{ entry.sender_username }}</strong> đã chia sẻ file <span class="filename">{{ entry.filename }}</span> cho <strong>{{ entry.receiver_username }}</strong>.
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p>Chưa có lịch sử chia sẻ file nào.</p>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

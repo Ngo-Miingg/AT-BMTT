@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Truyền File An Toàn</title> <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(120deg, #f0f2f5, #e1e9f2);
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            background: white;
+            padding: 20px 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.08);
+        }
+        .header h2 { margin: 0; color: #333; font-size: 28px; }
+        .header .user-info { font-size: 18px; font-weight: bold; color: #007bff; }
+        .header .logout-button {
+            padding: 10px 20px; background: #dc3545; color: white;
+            border: none; border-radius: 8px; cursor: pointer;
+            transition: background-color 0.3s ease; text-decoration: none; font-weight: bold;
+        }
+        .header .logout-button:hover { background: #c82333; }
+
+        .main-content { display: flex; gap: 25px; flex-wrap: wrap; }
+        .section {
+            background: white; padding: 30px; border-radius: 16px;
+            box-shadow: 0 15px 25px rgba(0,0,0,0.08); flex: 1; min-width: 300px;
+        }
+        .section h3 {
+            color: #007bff; margin-bottom: 25px; font-size: 24px;
+            border-bottom: 2px solid #e9ecef; padding-bottom: 10px;
+        }
+        label {
+            font-size: 16px; font-weight: bold; color: #555;
+            display: block; margin: 15px 0 5px;
+        }
+        input[type="file"], input[type="text"], select { /* Removed input[type="password"] styling as it's not primary here */
+            width: 100%; padding: 12px; margin: 8px 0 15px;
+            border: 1px solid #ccc; border-radius: 8px;
+            background-color: #fafafa; font-size: 16px; box-sizing: border-box;
+        }
+        button {
+            width: 100%; padding: 14px; background: #007bff;
+            border: none; color: white; border-radius: 8px;
+            font-size: 18px; cursor: pointer; transition: background-color 0.3s ease;
+            font-weight: bold; margin-top: 10px;
+        }
+        button:hover { background: #0056b3; }
+        .flash-message {
+            padding: 10px; margin-bottom: 15px; border-radius: 8px;
+            font-weight: bold; text-align: left; color: white;
+        }
+        .flash-message.success { background-color: #28a745; }
+        .flash-message.error { background-color: #dc3545; }
+        .flash-message.info { background-color: #17a2b8; }
+        .flash-message.warning { background-color: #ffc107; color: #333; }
+
+        .file-list {
+            list-style-type: none; padding: 0; max-height: 300px;
+            overflow-y: auto; border: 1px solid #eee;
+            border-radius: 8px; margin-bottom: 20px;
+        }
+        .file-list li {
+            padding: 12px 15px; border-bottom: 1px solid #eee;
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 16px; color: #444;
+        }
+        .file-list li:last-child { border-bottom: none; }
+        .file-list li:nth-child(even) { background-color: #f8f9fa; }
+        .file-name-status { flex-grow: 1; }
+        .file-status { font-size: 0.8em; padding: 2px 6px; border-radius: 4px; margin-left: 8px; color: white; }
+        .status-verified { background-color: #28a745; } /* Green */
+        .status-failed { background-color: #dc3545; }   /* Red */
+        .status-unknown { background-color: #6c757d; } /* Gray */
+        
+        .file-actions button, .file-actions a {
+            width: auto; padding: 8px 15px; font-size: 14px;
+            margin-left: 10px; margin-top: 0; text-decoration: none; display: inline-block;
+        }
+        .file-actions .download-button { background-color: #17a2b8; } /* Info Blue for download */
+        .file-actions .download-button:hover { background-color: #138496; }
+        .file-actions .delete-button { background-color: #dc3545; }
+        .file-actions .delete-button:hover { background-color: #c82333; }
+        .file-actions .share-button { background-color: #ffc107; color: #333; }
+        .file-actions .share-button:hover { background-color: #e0a800; }
+
+        #downloadResultDisplay { margin-top: 20px; text-align: center; }
+        #downloadResultDisplay a {
+            display: inline-block; padding: 10px 20px; background-color: #28a745; /* Green */
+            color: white; border-radius: 8px; text-decoration: none; font-weight: bold;
+            transition: background-color 0.3s ease;
+        }
+        #downloadResultDisplay a:hover { background-color: #218838; }
+        .message-container { margin-bottom: 20px; }
+
+        .modal { /* Share modal styling unchanged, download modal removed/simplified */
+            display: none; position: fixed; z-index: 1; left: 0; top: 0;
+            width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4);
+            justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background-color: #fefefe; margin: auto; padding: 30px;
+            border-radius: 12px; box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            width: 80%; max-width: 500px; text-align: center; position: relative;
+        }
+        .close-button {
+            color: #aaa; float: right; font-size: 28px; font-weight: bold;
+            position: absolute; top: 10px; right: 20px;
+        }
+        .close-button:hover, .close-button:focus { color: black; text-decoration: none; cursor: pointer; }
+        .modal-content h4 { color: #007bff; margin-bottom: 20px; font-size: 22px; }
+        .modal-content button { margin-top: 15px; }
+        .modal-content .cancel-button { background-color: #6c757d; }
+        .modal-content .cancel-button:hover { background-color: #5a6268; }
+        
+        @media (max-width: 768px) {
+            .main-content { flex-direction: column; }
+            .header { flex-direction: column; align-items: flex-start; gap: 15px; }
+            .header .logout-button { width: 100%; text-align: center; }
+            .section { min-width: unset; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>Dashboard Truyền File</h2>
+        <div class="user-info">
+            Xin chào, {{ current_user.username }}!
+            <a href="/logout" class="logout-button">Đăng xuất</a>
+        </div>
+    </div>
+
+    <div class="message-container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <ul style="list-style-type: none; padding: 0;">
+                    {% for category, message in messages %}
+                        <li class="flash-message {{ category }}">{{ message }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <div class="main-content">
+        <div class="section upload-section"> <h3>Tải lên File</h3> <form id="uploadForm" enctype="multipart/form-data"> <label for="uploadFileInput">Chọn file để tải lên:</label> <input type="file" id="uploadFileInput" name="file" required>
+                <button type="submit">Tải lên và Kiểm tra</button> </form>
+            <div id="uploadStatus" class="flash-message" style="display: none;"></div>
+        </div>
+
+        <div class="section owned-files-section">
+            <h3>File của bạn</h3>
+            <div id="ownedFileListContainer">
+                {% if owned_files %}
+                    <ul class="file-list">
+                        {% for file in owned_files %}
+                            <li>
+                                <span class="file-name-status">
+                                    {{ file.name }}
+                                    {% if file.integrity_status == 'verified' %}
+                                        <span class="file-status status-verified">Đã xác thực</span>
+                                    {% elif file.integrity_status == 'failed_integrity_check' %}
+                                        <span class="file-status status-failed">Lỗi toàn vẹn</span>
+                                    {% else %}
+                                        <span class="file-status status-unknown">Chưa rõ</span>
+                                    {% endif %}
+                                </span>
+                                <div class="file-actions">
+                                    <button class="download-button" onclick="downloadFile('{{ file.name }}', '{{ file.owner_id }}')">Tải xuống</button>
+                                    <button class="share-button" onclick="showSharePrompt('{{ file.name }}')">Chia sẻ</button>
+                                    <button class="delete-button" onclick="deleteFile('{{ file.name }}')">Xóa</button>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p>Bạn chưa có file nào. Hãy tải lên một file mới!</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="section shared-files-section">
+            <h3>File được chia sẻ với bạn</h3>
+            <div id="sharedFileListContainer">
+                {% if shared_files_with_me %}
+                    <ul class="file-list">
+                        {% for file in shared_files_with_me %}
+                            <li>
+                                <span class="file-name-status">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-share-fill" viewBox="0 0 16 16" style="vertical-align: middle; margin-right: 5px;">
+                                        <path d="M11.25 1.5a.75.75 0 0 0-.75.75v2.25a.75.75 0 0 0 .75.75h2.25a.75.75 0 0 0 .75-.75V2.25a.75.75 0 0 0-.75-.75h-2.25zM1.5 6.75a.75.75 0 0 0-.75.75v2.25a.75.75 0 0 0 .75.75h2.25a.75.75 0 0 0 .75-.75V7.5a.75.75 0 0 0-.75-.75h-2.25zM6.75 11.25a.75.75 0 0 0-.75.75v2.25a.75.75 0 0 0 .75.75h2.25a.75.75 0 0 0 .75-.75v-2.25a.75.75 0 0 0-.75-.75h-2.25z"/>
+                                    </svg>
+                                    {{ file.name }} (từ {{ file.owner_username }})
+                                    {% if file.integrity_status == 'verified' %}
+                                        <span class="file-status status-verified">Đã xác thực</span>
+                                    {% elif file.integrity_status == 'failed_integrity_check' %}
+                                        <span class="file-status status-failed">Lỗi toàn vẹn</span>
+                                    {% else %}
+                                        <span class="file-status status-unknown">Chưa rõ</span>
+                                    {% endif %}
+                                </span>
+                                <div class="file-actions">
+                                     <button class="download-button" onclick="downloadFile('{{ file.name }}', '{{ file.owner_id }}')">Tải xuống</button>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p>Chưa có file nào được chia sẻ với bạn.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div id="downloadResultDisplayContainer" class="section" style="display: none; margin-top: 20px; text-align: center;">
+        <h4>Kết quả Tải File</h4>
+        <div id="downloadStatusMessage" class="flash-message" style="display:none;"></div>
+        <div id="downloadResultDisplay"></div>
+    </div>
+
+
+    <div id="shareFileModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="hideShareFileModal()">&times;</span>
+            <h4>Chia sẻ file: <span id="currentShareFileName" style="color: #007bff;"></span></h4>
+            <label for="receiverUsernameInput">Chia sẻ với (Tên người dùng):</label>
+            <select id="receiverUsernameInput" name="receiver_username" required>
+                <option value="">Chọn người dùng</option>
+                {% for username in all_usernames %}
+                    <option value="{{ username }}">{{ username }}</option>
+                {% endfor %}
+            </select>
+            <button onclick="submitShare()">Xác nhận Chia sẻ</button>
+            <button onclick="hideShareFileModal()" class="cancel-button">Hủy</button>
+            <div id="shareStatus" class="flash-message" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        // Cập nhật danh sách file (hàm này có thể cần được gọi sau mỗi thao tác thay đổi file list)
+        async function updateFileLists() {
+            try {
+                const response = await fetch('{{ url_for("dashboard") }}'); // Fetch lại dashboard data
+                const text = await response.text();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(text, 'text/html');
+                
+                const newOwnedFileListHtml = doc.getElementById('ownedFileListContainer').innerHTML;
+                document.getElementById('ownedFileListContainer').innerHTML = newOwnedFileListHtml;
+
+                const newSharedFileListHtml = doc.getElementById('sharedFileListContainer').innerHTML;
+                document.getElementById('sharedFileListContainer').innerHTML = newSharedFileListHtml;
+
+                const newReceiverUsernameSelectHtml = doc.getElementById('receiverUsernameInput').innerHTML;
+                document.getElementById('receiverUsernameInput').innerHTML = newReceiverUsernameSelectHtml;
+
+            } catch (error) {
+                console.error('Error updating file lists:', error);
+                displayGlobalMessage('Không thể làm mới danh sách file.', 'error');
+            }
+        }
+        
+        function displayGlobalMessage(message, type = 'info') {
+            // This function can be expanded to show messages in a dedicated global area if needed.
+            // For now, using alert for simplicity for global messages if not tied to a specific section.
+            console.log(`Global Message (${type}): ${message}`);
+            const flashContainer = document.querySelector('.message-container ul');
+            if (flashContainer) {
+                 const li = document.createElement('li');
+                 li.className = `flash-message ${type}`;
+                 li.textContent = message;
+                 flashContainer.appendChild(li);
+                 setTimeout(() => li.remove(), 5000); // Auto-hide after 5s
+            } else {
+                alert(`${type.toUpperCase()}: ${message}`);
+            }
+        }
+
+        // Xử lý tải lên file (thay thế encryptForm)
+        document.getElementById('uploadForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+            const uploadStatusDiv = document.getElementById('uploadStatus');
+            uploadStatusDiv.style.display = 'none';
+            uploadStatusDiv.className = 'flash-message'; // Reset class
+
+            // Add a loading indicator if desired
+            uploadStatusDiv.innerText = 'Đang tải lên và kiểm tra...';
+            uploadStatusDiv.className = 'flash-message info';
+            uploadStatusDiv.style.display = 'block';
+            
+            try {
+                const response = await fetch('{{ url_for("upload_file") }}', { // Changed endpoint
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+
+                if (response.ok && result.status === 'success') {
+                    uploadStatusDiv.className = 'flash-message success';
+                    form.reset(); 
+                    await updateFileLists();
+                } else {
+                    uploadStatusDiv.className = 'flash-message error';
+                }
+                uploadStatusDiv.innerText = result.message;
+                uploadStatusDiv.style.display = 'block';
+
+            } catch (error) {
+                console.error('Error uploading file:', error);
+                uploadStatusDiv.className = 'flash-message error';
+                uploadStatusDiv.innerText = 'Đã xảy ra lỗi khi tải lên file.';
+                uploadStatusDiv.style.display = 'block';
+            }
+        });
+
+        // Xử lý tải xuống file (thay thế decrypt)
+        async function downloadFile(filename, ownerId) {
+            const downloadResultContainer = document.getElementById('downloadResultDisplayContainer');
+            const downloadStatusMsgDiv = document.getElementById('downloadStatusMessage');
+            const downloadResultDiv = document.getElementById('downloadResultDisplay');
+
+            downloadResultContainer.style.display = 'block';
+            downloadStatusMsgDiv.innerText = `Đang yêu cầu tải file '${filename}'...`;
+            downloadStatusMsgDiv.className = 'flash-message info';
+            downloadStatusMsgDiv.style.display = 'block';
+            downloadResultDiv.style.display = 'none';
+            downloadResultDiv.innerHTML = '';
+
+            try {
+                const response = await fetch('{{ url_for("download_transmitted_file") }}', { // Changed endpoint
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `filename=${encodeURIComponent(filename)}&owner_id=${encodeURIComponent(ownerId)}`
+                    // No password needed
+                });
+                const result = await response.json();
+
+                if (response.ok && result.status === 'success') {
+                    downloadStatusMsgDiv.className = 'flash-message success';
+                    downloadStatusMsgDiv.innerText = result.message;
+                    downloadResultDiv.innerHTML = `<a href="${result.download_link}" target="_blank" download>Tải xuống: ${filename}</a>`;
+                    downloadResultDiv.style.display = 'block';
+                } else {
+                    downloadStatusMsgDiv.className = 'flash-message error';
+                    downloadStatusMsgDiv.innerText = result.message || 'Lỗi không xác định khi tải file.';
+                    downloadResultDiv.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Error downloading file:', error);
+                downloadStatusMsgDiv.className = 'flash-message error';
+                downloadStatusMsgDiv.innerText = 'Đã xảy ra lỗi kết nối khi yêu cầu tải file.';
+                downloadResultDiv.style.display = 'none';
+            }
+        }
+
+
+        // Xóa file (logic không đổi nhiều, endpoint vẫn là /delete_file)
+        async function deleteFile(filename) {
+            if (!confirm(`Bạn có chắc chắn muốn xóa file "${filename}" không?`)) {
+                return;
+            }
+            try {
+                const response = await fetch('{{ url_for("delete_file") }}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `filename=${encodeURIComponent(filename)}`
+                });
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    displayGlobalMessage(result.message, 'success');
+                    await updateFileLists();
+                } else {
+                    displayGlobalMessage('Lỗi: ' + result.message, 'error');
+                }
+            } catch (error) {
+                console.error('Error deleting file:', error);
+                displayGlobalMessage('Đã xảy ra lỗi khi xóa file.', 'error');
+            }
+        }
+
+        // Xử lý chia sẻ file (logic không đổi nhiều)
+        let fileToShare = ''; 
+        function showSharePrompt(filename) {
+            fileToShare = filename;
+            document.getElementById('currentShareFileName').innerText = filename;
+            document.getElementById('receiverUsernameInput').value = '';
+            document.getElementById('shareFileModal').style.display = 'flex';
+            document.getElementById('shareStatus').style.display = 'none';
+        }
+
+        function hideShareFileModal() {
+            document.getElementById('shareFileModal').style.display = 'none';
+            document.getElementById('shareStatus').style.display = 'none';
+            fileToShare = '';
+        }
+async function downloadFile(filename, ownerId) {
+    const downloadResultContainer = document.getElementById('downloadResultDisplayContainer');
+    const downloadStatusMsgDiv = document.getElementById('downloadStatusMessage');
+    const downloadResultDiv = document.getElementById('downloadResultDisplay');
+
+    downloadResultContainer.style.display = 'block';
+    downloadStatusMsgDiv.innerText = `Đang yêu cầu tải file '${filename}'...`;
+    downloadStatusMsgDiv.className = 'flash-message info';
+    downloadStatusMsgDiv.style.display = 'block';
+    downloadResultDiv.style.display = 'none';
+    downloadResultDiv.innerHTML = '';
+
+    try {
+        const response = await fetch('{{ url_for("download_transmitted_file") }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `filename=${encodeURIComponent(filename)}&owner_id=${encodeURIComponent(ownerId)}`
+        });
+        const result = await response.json();
+
+        if (response.ok && result.status === 'success') {
+            downloadStatusMsgDiv.className = 'flash-message success';
+            downloadStatusMsgDiv.innerText = result.message;
+            downloadResultDiv.innerHTML = `
+                <a href="${result.download_link}" target="_blank" download>Tải xuống: ${filename}</a><br>
+                <small>Hash SHA-256 sau khi tải: <code>${result.sha256 || 'Không rõ'}</code></small>
+            `;
+            downloadResultDiv.style.display = 'block';
+        } else {
+            downloadStatusMsgDiv.className = 'flash-message error';
+            downloadStatusMsgDiv.innerText = result.message || 'Lỗi không xác định khi tải file.';
+            downloadResultDiv.style.display = 'none';
+        }
+    } catch (error) {
+        console.error('Error downloading file:', error);
+        downloadStatusMsgDiv.className = 'flash-message error';
+        downloadStatusMsgDiv.innerText = 'Đã xảy ra lỗi kết nối khi yêu cầu tải file.';
+        downloadResultDiv.style.display = 'none';
+    }
+}
+
+        async function submitShare() {
+            const receiverUsername = document.getElementById('receiverUsernameInput').value;
+            const shareStatusDiv = document.getElementById('shareStatus');
+            shareStatusDiv.style.display = 'none';
+
+            if (!receiverUsername) {
+                shareStatusDiv.className = 'flash-message warning';
+                shareStatusDiv.innerText = 'Vui lòng chọn người dùng để chia sẻ!';
+                shareStatusDiv.style.display = 'block';
+                return;
+            }
+
+            try {
+                const response = await fetch('{{ url_for("share_file") }}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `filename=${encodeURIComponent(fileToShare)}&receiver_username=${encodeURIComponent(receiverUsername)}`
+                });
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    shareStatusDiv.className = 'flash-message success';
+                    shareStatusDiv.innerText = result.message; // Show success in modal briefly
+                    await updateFileLists(); // Update lists which might reflect new share counts or status implicitly
+                    setTimeout(() => { // Hide modal and message after a delay
+                        hideShareFileModal();
+                    }, 2000); 
+                } else {
+                    shareStatusDiv.className = 'flash-message error';
+                    shareStatusDiv.innerText = result.message;
+                }
+                shareStatusDiv.style.display = 'block';
+
+            } catch (error) {
+                console.error('Error sharing file:', error);
+                shareStatusDiv.className = 'flash-message error';
+                shareStatusDiv.innerText = 'Đã xảy ra lỗi khi chia sẻ file.';
+                shareStatusDiv.style.display = 'block';
+            }
+        }
+
+        // Initial load actions if any
+        document.addEventListener('DOMContentLoaded', () => {
+            // Any specific init tasks can go here
+            // e.g. updateFileLists(); if you want to refresh on load without full page reload logic
+        });
+    </script>
+</body>
+</html>
