@@ -1,0 +1,6 @@
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: #212529; }
+::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #777; }
+.chat-window { height: 400px; overflow-y: auto; }
+#log-area { font-family: 'Courier New', Courier, monospace; font-size: 0.9em; }

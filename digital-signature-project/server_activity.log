@@ -1,0 +1,8 @@
+2025-06-28 14:44:49,740 - INFO - User 'admin' logged out.
+2025-06-28 14:44:54,124 - INFO - User 'alice' logged in successfully.
+2025-06-28 14:45:03,032 - INFO - User 'alice' sent file 'contract.txt' to 'ming'.
+2025-06-28 14:45:05,497 - INFO - User 'alice' logged out.
+2025-06-28 14:45:11,630 - INFO - User 'ming' logged in successfully.
+2025-06-28 14:46:11,558 - INFO - User 'ming' successfully assembled file 'contract.txt'.
+2025-06-28 14:46:29,849 - INFO - User 'ming' logged out.
+2025-06-28 14:46:36,858 - INFO - User 'admin' logged in successfully.
